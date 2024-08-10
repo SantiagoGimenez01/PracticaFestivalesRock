@@ -104,7 +104,7 @@ careta(Festival):-
 nacAndPop(Festival):-
     festival(Festival, Bandas, _),
     not(careta(Festival)),
-    forall(member(Banda, Bandas), banda(Banda, argentina, _)).
+    forall(member(Banda, Bandas), (banda(Banda, argentina, Popularidad), Popularidad > 1000)).
 
 % Punto 4
 % sobrevendido/1: Se cumple para los festivales que vendieron más entradas que la capacidad del lugar donde se realizan.
@@ -123,25 +123,21 @@ sobrevendido(Festival):-
 %    - Las plateas numeradas salen el triple del precio base para las filas de atrás (>10) y 6 veces el precio base para las 10 primeras filas.
 % Nota: no hace falta contemplar si es un festival itinerante.
 recaudacionTotal(Festival, TotalRecaudado):-
-    findall(Precio, (entradaVendida(Festival, TipoEntrada), precioEntrada(Festival,TipoEntrada, Precio)), Precios),
+    festival(Festival, _, Lugar),
+    findall(Precio, (entradaVendida(Festival, TipoEntrada), precioEntrada(Lugar, TipoEntrada, Precio)), Precios),
     sumlist(Precios, TotalRecaudado).
 
-precioEntrada(Festival, campo, Precio):-
-    festival(Festival, _, Lugar),
-    lugar(Lugar, _, PrecioBase),
-    Precio = PrecioBase.
-precioEntrada(Festival, plateaGeneral(Zona), Precio):-
-    festival(Festival, _, Lugar),
+precioEntrada(Lugar, campo, Precio):-
+    lugar(Lugar, _, Precio).
+precioEntrada(Lugar, plateaGeneral(Zona), Precio):-
     lugar(Lugar, _, PrecioBase),
     plusZona(Lugar, Zona, Recargo),
-    Precio = PrecioBase + Recargo.
-precioEntrada(Festival, plateaNumerada(Fila), Precio):-
-    festival(Festival, _, Lugar),
+    Precio is PrecioBase + Recargo.
+precioEntrada(Lugar, plateaNumerada(Fila), Precio):-
     lugar(Lugar, _, PrecioBase),
     Fila > 10,
     Precio is (PrecioBase * 3).
-precioEntrada(Festival, plateaNumerada(Fila), Precio):-
-    festival(Festival, _, Lugar),
+precioEntrada(Lugar, plateaNumerada(Fila), Precio):-
     lugar(Lugar, _, PrecioBase),
     Fila =< 10,
     Precio is (PrecioBase * 6).
@@ -152,11 +148,11 @@ delMismoPalo(UnaBanda, OtraBanda):-
     tocaronJuntas(UnaBanda, OtraBanda).
 delMismoPalo(UnaBanda, OtraBanda):-
     tocaronJuntas(UnaBanda, TerceraBanda),
-    tocaronJuntas(TerceraBanda, OtraBanda),
     banda(TerceraBanda, _, PopularidadTercera),
-    banda(OtraBanda, _, PopularidadBanda),
-    PopularidadTercera > PopularidadBanda,
-    UnaBanda \= OtraBanda.
+    delMismoPalo(TerceraBanda, OtraBanda),
+    banda(OtraBanda, _, PopularidadOtra),
+    PopularidadTercera > PopularidadOtra.
+
 
 tocaronJuntas(UnaBanda, OtraBanda):-
     festival(_, Bandas, _),
